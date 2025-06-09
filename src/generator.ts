@@ -2,8 +2,14 @@ export function generateMermaid(spec: any): string {
   const lines: string[] = [];
   const edges: string[] = [];
   lines.push('classDiagram');
+  // Add a root node so every path has a valid parent
+  lines.push('class `/` {');
+  lines.push('  <<Path>>');
+  lines.push('}');
 
   const paths = spec.paths || {};
+  const pathSet = new Set<string>(Object.keys(paths));
+  pathSet.add('/');
   for (const [path, pathItem] of Object.entries<any>(paths)) {
     lines.push(`class \`${path}\` {`);
     lines.push('  <<Path>>');
@@ -60,10 +66,13 @@ export function generateMermaid(spec: any): string {
   for (const path of Object.keys(paths)) {
     if (path === '/') continue;
     const segments = path.split('/').filter(Boolean);
-    const parentSegments = segments.slice(0, -1);
     let parent = '/';
-    if (parentSegments.length > 0) {
-      parent += parentSegments.join('/');
+    for (let i = segments.length - 1; i >= 0; i--) {
+      const candidate = '/' + segments.slice(0, i).join('/');
+      if (pathSet.has(candidate)) {
+        parent = candidate || '/';
+        break;
+      }
     }
     edges.push(`\`${parent}\` --> \`${path}\``);
   }
