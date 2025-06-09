@@ -18,6 +18,6 @@ Output:
 
 ```
 graph TD
-  GET_/users --> "200: User[]"
-  POST_/users --> "201: User"
+  GET__users --> res1["200: User[]"]
+  POST__users --> res2["201: User"]
 ```
