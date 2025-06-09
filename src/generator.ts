@@ -1,25 +1,74 @@
 export function generateMermaid(spec: any): string {
-  const lines = ['graph TD'];
+  const lines: string[] = [];
+  const edges: string[] = [];
+  lines.push('classDiagram');
+
   const paths = spec.paths || {};
-  let counter = 1;
-  for (const [path, methods] of Object.entries<any>(paths)) {
-    for (const [method, info] of Object.entries<any>(methods)) {
-      const responses = info.responses || {};
+  for (const [path, pathItem] of Object.entries<any>(paths)) {
+    lines.push(`class \`${path}\` {`);
+    lines.push('  <<Path>>');
+
+    const queryParams = new Map<string, string>();
+    if (Array.isArray((pathItem as any).parameters)) {
+      for (const p of (pathItem as any).parameters) {
+        if (p.in === 'query') {
+          queryParams.set(p.name, schemaToString(p.schema));
+        }
+      }
+    }
+
+    for (const [method, op] of Object.entries<any>(pathItem)) {
+      if (!isHttpMethod(method)) continue;
+      if (Array.isArray(op.parameters)) {
+        for (const p of op.parameters) {
+          if (p.in === 'query') {
+            queryParams.set(p.name, schemaToString(p.schema));
+          }
+        }
+      }
+    }
+
+    if (queryParams.size > 0) {
+      lines.push('');
+      lines.push('  Query Parameters:');
+      for (const [name, type] of queryParams) {
+        lines.push(`    ${name}: ${type}`);
+      }
+    }
+
+    lines.push('');
+    lines.push('  HTTP methods:');
+    for (const [method, op] of Object.entries<any>(pathItem)) {
+      if (!isHttpMethod(method)) continue;
+      const reqSchema = op.requestBody?.content?.['application/json']?.schema;
+      const reqType = reqSchema ? schemaToString(reqSchema) : '';
+      const responses = op.responses || {};
       const status = Object.keys(responses)[0];
       const res = responses[status] || {};
-      let label = status;
-      const schema = res.content?.['application/json']?.schema;
-      if (schema) {
-        label += ': ' + schemaToString(schema);
+      let resType = '';
+      const resSchema = res.content?.['application/json']?.schema;
+      if (resSchema) {
+        resType = schemaToString(resSchema);
       } else if (res.description) {
-        label += ': ' + res.description;
+        resType = res.description;
       }
-      const nodeId = `res${counter++}`;
-      const from = `${method.toUpperCase()}_${path.replace(/[^a-zA-Z0-9]/g, '_')}`;
-      lines.push(`  ${from} --> ${nodeId}["${label}"]`);
+      lines.push(`    ${method.toUpperCase()}(${reqType}): ${resType}`);
     }
+    lines.push('}');
   }
-  return lines.join('\n');
+
+  for (const path of Object.keys(paths)) {
+    if (path === '/') continue;
+    const segments = path.split('/').filter(Boolean);
+    const parentSegments = segments.slice(0, -1);
+    let parent = '/';
+    if (parentSegments.length > 0) {
+      parent += parentSegments.join('/');
+    }
+    edges.push(`\`${parent}\` --> \`${path}\``);
+  }
+
+  return [...lines, ...edges].join('\n');
 }
 
 function schemaToString(schema: any): string {
@@ -34,4 +83,8 @@ function schemaToString(schema: any): string {
 
 function refToName(ref: string): string {
   return ref.split('/').pop() || ref;
+}
+
+function isHttpMethod(m: string): boolean {
+  return ['get', 'post', 'put', 'delete', 'patch', 'head', 'options', 'trace'].includes(m.toLowerCase());
 }
