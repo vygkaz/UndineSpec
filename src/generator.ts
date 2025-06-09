@@ -1,6 +1,7 @@
 export function generateMermaid(spec: any): string {
   const lines = ['graph TD'];
   const paths = spec.paths || {};
+  let counter = 1;
   for (const [path, methods] of Object.entries<any>(paths)) {
     for (const [method, info] of Object.entries<any>(methods)) {
       const responses = info.responses || {};
@@ -13,7 +14,9 @@ export function generateMermaid(spec: any): string {
       } else if (res.description) {
         label += ': ' + res.description;
       }
-      lines.push(`  ${method.toUpperCase()}_${path.replace(/[\/#]/g, '_')} --> "${label}"`);
+      const nodeId = `res${counter++}`;
+      const from = `${method.toUpperCase()}_${path.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      lines.push(`  ${from} --> ${nodeId}["${label}"]`);
     }
   }
   return lines.join('\n');
