@@ -17,7 +17,19 @@ npx ts-node bin/undinespec.ts examples/sample.yaml
 Output:
 
 ```
-graph TD
-  GET__users --> res1["200: User[]"]
-  POST__users --> res2["201: User"]
+classDiagram
+class "/" {
+  <<Path>>
+}
+class "/users" {
+  <<Path>>
+
+  Query Parameters:
+    (none)
+
+  HTTP methods:
+    • GET(): User[]
+    • POST(): User
+}
+"/" --> "/users"
 ```
