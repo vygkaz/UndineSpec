@@ -16,8 +16,17 @@ npx ts-node bin/undinespec.ts examples/sample.yaml
 
 Output:
 
-```
-graph TD
-  GET__users --> res1["200: User[]"]
-  POST__users --> res2["201: User"]
+```mermaid
+classDiagram
+class `/` {
+  <<Path>>
+}
+class `/users` {
+  <<Path>>
+
+  HTTP methods:
+    GET(): User[]
+    POST(): User
+}
+`/` --> `/users`
 ```
